@@ -5,6 +5,7 @@ import com.microservice.loja.controller.dto.CompraDto;
 import com.microservice.loja.controller.dto.InfoFornecedorDto;
 import com.microservice.loja.controller.dto.InfoPedidoDto;
 import com.microservice.loja.model.Compra;
+import com.microservice.loja.repositories.CompraRepository;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,11 @@ public class CompraService {
     @Autowired
     private FornecedorClient fornecedorClient;
 
-    @HystrixCommand(fallbackMethod = "realizaCompraFallBack")
+    @Autowired
+    private CompraRepository compraRepository;
+
+    @HystrixCommand(fallbackMethod = "realizaCompraFallBack",
+            threadPoolKey = "realizaCompraThreadPool") //treadsPoolKey = BulkHead Patter, cria um poll de treads separadas por requisição
     public Compra realizaCompra(CompraDto compra) {//Metodo retorna os dados de Compra de um Cliente/Loja
 
         final String estado = compra.getEndereco().getEstado();
@@ -62,12 +67,13 @@ public class CompraService {
         compraSalva.setPedidoId(pedido.getId()); //Pegando o InfoPedidoDto e passando para Compra - Dto vem do fornecedor
         compraSalva.setTempoDePreparo(pedido.getTempoDePreparo()); //Pegando o InfoPedidoDto e passando para Compra
         compraSalva.setEnderecoDestino(compra.getEndereco().toString()); //Endereco vem do Post do pedido do cliente na Loja
+        //Salvando no db
+        compraRepository.save(compraSalva);
+
         return compraSalva;
 
 
-
-
-        //Implementado com RestTemplate
+        //Implementado com RestTemplate - funciona igual ao Feign
         //null depois do GET, pois não envia informação nenhuma
         //loja POST pedido, para fornecedor do endereco do cliente
 //        ResponseEntity<InfoFornecedorDto> exchage =
@@ -83,6 +89,12 @@ public class CompraService {
         //System.out.println(exchage.getBody().getEndereco());
     }
 
+    @HystrixCommand(threadPoolKey = "getCompraByIDThreadPool")
+    public Compra getCompraByID(Long id) {
+        return compraRepository.findById(id).orElse(new Compra()); //orElse - se não tiver o id determinado, retorna uma compra vazia
+    }
+
+
     //Fallback - dá fallback toda vez que há um timeout no método pelo Hystrix - Apache JMeter, programa para testar o Hystrix se quiser
     public Compra realizaCompraFallBack(CompraDto compra) {
         //Crie uma resposta padrão para o Fallback
@@ -90,4 +102,6 @@ public class CompraService {
         compraFallback.setEnderecoDestino(compra.getEndereco().getEstado());
         return compraFallback;
     }
+
+
 }
