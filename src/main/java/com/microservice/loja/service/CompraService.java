@@ -35,16 +35,16 @@ public class CompraService {
     public Compra realizaCompra(CompraDto compra) {//Metodo retorna os dados de Compra de um Cliente/Loja
 
         //Implementado com Feign
-        InfoFornecedorDto info = fornecedorClient.getInfoPorEstado(compra.getEndereco().getEstado()); //retorna o Estado do Fornecedor
+        InfoFornecedorDto info = fornecedorClient.getInfoPorEstado(compra.getEndereco().getEstado()); //Envio endereco Loja e retorna o Estado do Fornecedor
 
-        //Info do pedido do usuário - Realiza um POST no fornecedor com os dados do pedido e pegando (InfoPedidoDto) o Id e Tempo de preparo
-        InfoPedidoDto pedido = fornecedorClient.realizaPedido(compra.getItens());
+        //Info do pedido do usuário/loja - Realiza um POST no fornecedor com os dados do pedido e pegando (InfoPedidoDto)
+        InfoPedidoDto pedido = fornecedorClient.realizaPedido(compra.getItens());//Post, quais itens Loja quer, retorna idPedido e tempo de preparo
 
         System.out.println(info.getEndereco()); //recebendo o Estado do Fornecedor
 
-        //Elaborando dados de uma compra - para quando compra for feita, gera um pedido no fornecedor
-        Compra compraSalva = new Compra();
-        compraSalva.setPedidoId(pedido.getId()); //Pegando o InfoPedidoDto e passando para Compra
+        //Elaborando dados de uma compra - para quando compra for feita/post na loja, gera um pedido/post no fornecedor
+        Compra compraSalva = new Compra(); // pedido é uma nova compra
+        compraSalva.setPedidoId(pedido.getId()); //Pegando o InfoPedidoDto e passando para Compra - Dto vem do fornecedor
         compraSalva.setTempoDePreparo(pedido.getTempoDePreparo()); //Pegando o InfoPedidoDto e passando para Compra
         compraSalva.setEnderecoDestino(compra.getEndereco().toString()); //Endereco vem do Post do pedido do cliente na Loja
         return compraSalva;
