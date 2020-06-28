@@ -3,6 +3,8 @@ package com.microservice.loja.service;
 import com.microservice.loja.client.FornecedorClient;
 import com.microservice.loja.controller.dto.CompraDto;
 import com.microservice.loja.controller.dto.InfoFornecedorDto;
+import com.microservice.loja.controller.dto.InfoPedidoDto;
+import com.microservice.loja.model.Compra;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -17,11 +19,6 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class CompraService {
 
-    //Feign - Não esqueça de habilitar o @EnableFeignClients no main
-    @Autowired
-    private FornecedorClient fornecedorClient;
-
-
     //RestTemplate
     //@Autowired
     //private RestTemplate restTemplate;
@@ -30,11 +27,30 @@ public class CompraService {
     //@Autowired //DiscoveryClient do SpringFramework.Cloud
     //private DiscoveryClient eurekaClient;
 
-    public void realizaCompra(CompraDto compra) {
+
+    //Feign - Não esqueça de habilitar o @EnableFeignClients no main
+    @Autowired
+    private FornecedorClient fornecedorClient;
+
+    public Compra realizaCompra(CompraDto compra) {//Metodo retorna os dados de Compra de um Cliente/Loja
 
         //Implementado com Feign
-        InfoFornecedorDto info = fornecedorClient.getInfoPorEstado(compra.getEndereco().getEstado()); //passando o Estado do Cliente da Loja
+        InfoFornecedorDto info = fornecedorClient.getInfoPorEstado(compra.getEndereco().getEstado()); //retorna o Estado do Fornecedor
+
+        //Info do pedido do usuário - Realiza um POST no fornecedor com os dados do pedido e pegando (InfoPedidoDto) o Id e Tempo de preparo
+        InfoPedidoDto pedido = fornecedorClient.realizaPedido(compra.getItens());
+
         System.out.println(info.getEndereco()); //recebendo o Estado do Fornecedor
+
+        //Elaborando dados de uma compra - para quando compra for feita, gera um pedido no fornecedor
+        Compra compraSalva = new Compra();
+        compraSalva.setPedidoId(pedido.getId()); //Pegando o InfoPedidoDto e passando para Compra
+        compraSalva.setTempoDePreparo(pedido.getTempoDePreparo()); //Pegando o InfoPedidoDto e passando para Compra
+        compraSalva.setEnderecoDestino(compra.getEndereco().toString()); //Endereco vem do Post do pedido do cliente na Loja
+        return compraSalva;
+
+
+
 
         //Implementado com RestTemplate
         //null depois do GET, pois não envia informação nenhuma

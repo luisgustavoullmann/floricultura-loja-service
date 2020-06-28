@@ -2,12 +2,14 @@ package com.microservice.loja.controller.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Created by Luis Gustavo Ullmann on 26/06/2020
  */
 @Getter
 @Setter
+@ToString
 public class EnderecoDto {
 
     private String rua;
