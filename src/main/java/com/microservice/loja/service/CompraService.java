@@ -5,6 +5,7 @@ import com.microservice.loja.controller.dto.CompraDto;
 import com.microservice.loja.controller.dto.InfoFornecedorDto;
 import com.microservice.loja.controller.dto.InfoPedidoDto;
 import com.microservice.loja.model.Compra;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ public class CompraService {
     @Autowired
     private FornecedorClient fornecedorClient;
 
+    @HystrixCommand(fallbackMethod = "realizaCompraFallBack")
     public Compra realizaCompra(CompraDto compra) {//Metodo retorna os dados de Compra de um Cliente/Loja
 
         final String estado = compra.getEndereco().getEstado();
@@ -53,7 +55,7 @@ public class CompraService {
         //Post, quais itens Loja quer, retorna idPedido e tempo de preparo
         InfoPedidoDto pedido = fornecedorClient.realizaPedido(compra.getItens());
 
-        //System.out.println(info.getEndereco()); //recebendo o Estado do Fornecedor
+        System.out.println(info.getEndereco()); //recebendo o Estado do Fornecedor
 
         //Elaborando dados de uma compra - para quando compra for feita/post na loja, gera um pedido/post no fornecedor
         Compra compraSalva = new Compra(); // pedido é uma nova compra
@@ -79,5 +81,13 @@ public class CompraService {
 //                });
 
         //System.out.println(exchage.getBody().getEndereco());
+    }
+
+    //Fallback - dá fallback toda vez que há um timeout no método pelo Hystrix - Apache JMeter, programa para testar o Hystrix se quiser
+    public Compra realizaCompraFallBack(CompraDto compra) {
+        //Crie uma resposta padrão para o Fallback
+        Compra compraFallback = new Compra();
+        compraFallback.setEnderecoDestino(compra.getEndereco().getEstado());
+        return compraFallback;
     }
 }
