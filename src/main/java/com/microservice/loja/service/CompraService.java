@@ -5,6 +5,8 @@ import com.microservice.loja.controller.dto.CompraDto;
 import com.microservice.loja.controller.dto.InfoFornecedorDto;
 import com.microservice.loja.controller.dto.InfoPedidoDto;
 import com.microservice.loja.model.Compra;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -13,9 +15,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.logging.Logger;
+
 /**
  * Created by Luis Gustavo Ullmann on 26/06/2020
  */
+@Slf4j
 @Service
 public class CompraService {
 
@@ -27,6 +32,8 @@ public class CompraService {
     //@Autowired //DiscoveryClient do SpringFramework.Cloud
     //private DiscoveryClient eurekaClient;
 
+    //Trabalhando com logs - pois quando temos muitos microservices, fica mais fácil de entender o andamento dos logs
+//    private static final Logger LOG = LoggerFactory.getLogger(CompraService.class);
 
     //Feign - Não esqueça de habilitar o @EnableFeignClients no main
     @Autowired
@@ -34,13 +41,19 @@ public class CompraService {
 
     public Compra realizaCompra(CompraDto compra) {//Metodo retorna os dados de Compra de um Cliente/Loja
 
+        final String estado = compra.getEndereco().getEstado();
+
+        log.info("Buscando informações do fornecedor de {}, para o cliente da loja de {}", estado, estado);
         //Implementado com Feign
-        InfoFornecedorDto info = fornecedorClient.getInfoPorEstado(compra.getEndereco().getEstado()); //Envio endereco Loja e retorna o Estado do Fornecedor
+        //Envio endereco Loja e retorna o Estado do Fornecedor
+        InfoFornecedorDto info = fornecedorClient.getInfoPorEstado(compra.getEndereco().getEstado());
 
+        log.info("realizando um pedido");
         //Info do pedido do usuário/loja - Realiza um POST no fornecedor com os dados do pedido e pegando (InfoPedidoDto)
-        InfoPedidoDto pedido = fornecedorClient.realizaPedido(compra.getItens());//Post, quais itens Loja quer, retorna idPedido e tempo de preparo
+        //Post, quais itens Loja quer, retorna idPedido e tempo de preparo
+        InfoPedidoDto pedido = fornecedorClient.realizaPedido(compra.getItens());
 
-        System.out.println(info.getEndereco()); //recebendo o Estado do Fornecedor
+        //System.out.println(info.getEndereco()); //recebendo o Estado do Fornecedor
 
         //Elaborando dados de uma compra - para quando compra for feita/post na loja, gera um pedido/post no fornecedor
         Compra compraSalva = new Compra(); // pedido é uma nova compra
