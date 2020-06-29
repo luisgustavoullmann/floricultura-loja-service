@@ -2,11 +2,10 @@ package com.microservice.loja.model;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+
+import javax.persistence.*;
 import java.time.LocalDate;
 
 /**
@@ -16,8 +15,17 @@ import java.time.LocalDate;
 @Setter
 @Entity
 public class Compra {
+    //No nosso caso, essa transação se resume em fazer um pedido no Fornecedor e criar um voucher no Transportador
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id; //Id compra
+
+    //Estado da compra - Tratamento de erro
+    @Enumerated(EnumType.STRING)
+    private CompraState state;
+
+    //Fornecedor
     private Long pedidoId; //ID do pedido gerado pelo fornecedor
     private Integer tempoDePreparo;
     private String enderecoDestino;

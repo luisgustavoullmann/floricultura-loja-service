@@ -8,6 +8,7 @@ import com.microservice.loja.controller.dto.fornecedor.InfoPedidoDto;
 import com.microservice.loja.controller.dto.transporte.InfoEntregaDto;
 import com.microservice.loja.controller.dto.transporte.VoucherDto;
 import com.microservice.loja.model.Compra;
+import com.microservice.loja.model.CompraState;
 import com.microservice.loja.repositories.CompraRepository;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +49,16 @@ public class CompraService {
             threadPoolKey = "realizaCompraThreadPool") //treadsPoolKey = BulkHead Patter, cria um poll de treads separadas por requisição
     public Compra realizaCompra(CompraDto compra) {//Metodo retorna os dados de Compra de um Cliente/Loja
 
+        //Tratamento de erro
+        //Em caso de erro na transação com fornecedor e transporte o cliente precisa ter duas opções:
+        //1 - Cancelar
+        //2 - Tentar realizar a mesma compra novamente
+        //Por isso, primeira coisa que vamos fazer é salvar a compra
+        Compra compraSalva = new Compra(); // pedido é uma nova compra
+        compraSalva.setState(CompraState.RECEBIDO); //gerando um estado para compra
+        compraRepository.save(compraSalva); //Salvando no db
+        compra.setCompraId(compraSalva.getId());//Alterando o compraId no DTO para caso dê fallback
+
         final String estado = compra.getEndereco().getEstado();
 
         log.info("Buscando informações do fornecedor de {}, para o cliente da loja de {}", estado, estado);
@@ -60,6 +71,8 @@ public class CompraService {
         //Feign Fornecedor
         //POST, quais itens Loja quer, retorna idPedido e tempo de preparo
         InfoPedidoDto pedido = fornecedorClient.realizaPedido(compra.getItens());
+        compraSalva.setState(CompraState.PEDIDO_REALIZADO); //gerando um estado para compra
+        compraRepository.save(compraSalva); //Salvando no db
 
         //Transporte
         InfoEntregaDto entregaDto = new InfoEntregaDto(); //criando um Dto que vai receber os dados da entrega
@@ -69,12 +82,16 @@ public class CompraService {
         entregaDto.setEnderecoOrigem(info.getEndereco()); //endereco do fornecedor
         entregaDto.setEnderecoDestino(compra.getEndereco().toString()); //endereço do cliente final que realiza a compra
 
+        //if(1==1)throw new RuntimeException(); //Lançando um exception para gerar uma falha
+
         //Feign do Transporte
         VoucherDto voucher = transportadorClient.reservaEntrega(entregaDto);
+        compraSalva.setState(CompraState.ENTREGA_RESERVADA_REALIZADA); //gerando um estado para compra
+        compraRepository.save(compraSalva); //Salvando no db
 
         //Após o POST do pedido no fornecedor, essas dados retornam para loja - Postman: http://localhost:8081/compra
         //Retorno do POST é pelo Feign FornecedorCLient (acima)
-        Compra compraSalva = new Compra(); // pedido é uma nova compra
+
         compraSalva.setPedidoId(pedido.getId()); //Pegando o InfoPedidoDto e passando para Compra - Dto vem do fornecedor
         compraSalva.setTempoDePreparo(pedido.getTempoDePreparo()); //Pegando o InfoPedidoDto e passando para Compra
         compraSalva.setEnderecoDestino(compra.getEndereco().toString()); //Endereco vem do Post do pedido do cliente na Loja
@@ -82,8 +99,7 @@ public class CompraService {
         //Feign Transporte com dados do voucher para a compra
         compraSalva.setDataParaEntrega(voucher.getPrevisaoParaEntrega());
         compraSalva.setVoucher(voucher.getNumero());
-
-        //Salvando no db
+        compraSalva.setState(CompraState.TRANSPORTE_GERADO); //gerando um estado para compra
         compraRepository.save(compraSalva);
 
         return compraSalva;
@@ -113,11 +129,27 @@ public class CompraService {
 
     //Fallback - dá fallback toda vez que há um timeout no método pelo Hystrix - Apache JMeter, programa para testar o Hystrix se quiser
     public Compra realizaCompraFallBack(CompraDto compra) {
+        if(compra.getCompraId() != null){
+            //Já tendo uma compra geranda(ID dela), antes de dar fallback em algum ponto da transação
+            // retorna o estado da compra que estava antes de dar fallback
+            return compraRepository.findById(compra.getCompraId()).get();
+        }
         //Crie uma resposta padrão para o Fallback
         Compra compraFallback = new Compra();
         compraFallback.setEnderecoDestino(compra.getEndereco().getEstado());
         return compraFallback;
     }
 
+    // Esse método pode ser chamado em caso de fallback e o cliente queira reprocessar a compra
+
+//    public Compra reprocessaCompra(Long id){
+//        return null;
+//    }
+
+    // Esse método pode ser chamado em caso de fallback e o cliente queira cancelar a compra
+    // com base no id e estado atual do pedido
+//    public Compra cancelaCompra(Long id){
+//
+//    }
 
 }

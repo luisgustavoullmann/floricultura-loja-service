@@ -1,5 +1,6 @@
 package com.microservice.loja.controller.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,4 +19,9 @@ public class CompraDto {
     private List<ItemDaCompraDto> itens;
 
     private EnderecoDto endereco; //Endereço do cliente que fará um POST na loja
+
+    //Fallback
+    @JsonIgnore
+    private Long compraId;
+
 }
