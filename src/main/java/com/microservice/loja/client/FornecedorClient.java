@@ -18,9 +18,11 @@ public interface FornecedorClient {//pom spring-cloud-starter-feing e no main @E
     //implementar os metodos do Controller que quer acessar
 
     //Assinatura do método Get, porém alteramos o retorno para o DTO
-    @GetMapping("/info/{estado}") //Passar na anotação toda a URL RequestMapping+GetMapping
+    @GetMapping("/info/{estado}")
+    //Passar na anotação toda a URL RequestMapping+GetMapping
     InfoFornecedorDto getInfoPorEstado(@PathVariable("estado") String estado);
 
-    @PostMapping("/pedido") //fazendo um POST de um pedido no fornecedor
+    @PostMapping("/pedido")
+        //fazendo um POST de um pedido no fornecedor
     InfoPedidoDto realizaPedido(List<ItemDaCompraDto> itens);
 }

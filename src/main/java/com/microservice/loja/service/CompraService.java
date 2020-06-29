@@ -46,7 +46,8 @@ public class CompraService {
     private CompraRepository compraRepository;
 
     @HystrixCommand(fallbackMethod = "realizaCompraFallBack",
-            threadPoolKey = "realizaCompraThreadPool") //treadsPoolKey = BulkHead Patter, cria um poll de treads separadas por requisição
+            threadPoolKey = "realizaCompraThreadPool")
+    //treadsPoolKey = BulkHead Patter, cria um poll de treads separadas por requisição
     public Compra realizaCompra(CompraDto compra) {//Metodo retorna os dados de Compra de um Cliente/Loja
 
         //Tratamento de erro
@@ -129,7 +130,7 @@ public class CompraService {
 
     //Fallback - dá fallback toda vez que há um timeout no método pelo Hystrix - Apache JMeter, programa para testar o Hystrix se quiser
     public Compra realizaCompraFallBack(CompraDto compra) {
-        if(compra.getCompraId() != null){
+        if (compra.getCompraId() != null) {
             //Já tendo uma compra geranda(ID dela), antes de dar fallback em algum ponto da transação
             // retorna o estado da compra que estava antes de dar fallback
             return compraRepository.findById(compra.getCompraId()).get();
