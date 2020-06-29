@@ -12,8 +12,10 @@ import java.util.List;
 @Getter
 @Setter
 public class CompraDto {
+    // Será um POST na loja, cliente passa seu endereço para termos os fornecedores da região
+    // e quais produtos quer do fornecedor
 
     private List<ItemDaCompraDto> itens;
 
-    private EnderecoDto endereco;
+    private EnderecoDto endereco; //Endereço do cliente que fará um POST na loja
 }

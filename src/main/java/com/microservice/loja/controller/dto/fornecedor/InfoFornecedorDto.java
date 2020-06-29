@@ -1,4 +1,4 @@
-package com.microservice.loja.controller.dto;
+package com.microservice.loja.controller.dto.fornecedor;
 
 import lombok.Getter;
 import lombok.Setter;

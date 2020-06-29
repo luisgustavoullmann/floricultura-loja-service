@@ -1,4 +1,4 @@
-package com.microservice.loja.controller.dto;
+package com.microservice.loja.controller.dto.fornecedor;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -9,6 +9,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class InfoPedidoDto { //Após o POST, esses são os dados que retornam para Loja
-    private Long id;
+    private Long id; //pedidoId que terá um POST no fornecedor
     private Integer tempoDePreparo;
 }

@@ -1,7 +1,7 @@
 package com.microservice.loja.client;
 
-import com.microservice.loja.controller.dto.InfoFornecedorDto;
-import com.microservice.loja.controller.dto.InfoPedidoDto;
+import com.microservice.loja.controller.dto.fornecedor.InfoFornecedorDto;
+import com.microservice.loja.controller.dto.fornecedor.InfoPedidoDto;
 import com.microservice.loja.controller.dto.ItemDaCompraDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

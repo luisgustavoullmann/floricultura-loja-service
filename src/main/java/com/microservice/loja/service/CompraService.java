@@ -1,23 +1,20 @@
 package com.microservice.loja.service;
 
 import com.microservice.loja.client.FornecedorClient;
+import com.microservice.loja.client.TransportadorClient;
 import com.microservice.loja.controller.dto.CompraDto;
-import com.microservice.loja.controller.dto.InfoFornecedorDto;
-import com.microservice.loja.controller.dto.InfoPedidoDto;
+import com.microservice.loja.controller.dto.fornecedor.InfoFornecedorDto;
+import com.microservice.loja.controller.dto.fornecedor.InfoPedidoDto;
+import com.microservice.loja.controller.dto.transporte.InfoEntregaDto;
+import com.microservice.loja.controller.dto.transporte.VoucherDto;
 import com.microservice.loja.model.Compra;
 import com.microservice.loja.repositories.CompraRepository;
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.logging.Logger;
+import java.time.LocalDate;
 
 /**
  * Created by Luis Gustavo Ullmann on 26/06/2020
@@ -42,6 +39,9 @@ public class CompraService {
     private FornecedorClient fornecedorClient;
 
     @Autowired
+    private TransportadorClient transportadorClient;
+
+    @Autowired
     private CompraRepository compraRepository;
 
     @HystrixCommand(fallbackMethod = "realizaCompraFallBack",
@@ -57,16 +57,32 @@ public class CompraService {
 
         log.info("realizando um pedido");
         //Info do pedido do usuário/loja - Realiza um POST no fornecedor com os dados do pedido e pegando (InfoPedidoDto)
-        //Post, quais itens Loja quer, retorna idPedido e tempo de preparo
+        //Feign Fornecedor
+        //POST, quais itens Loja quer, retorna idPedido e tempo de preparo
         InfoPedidoDto pedido = fornecedorClient.realizaPedido(compra.getItens());
 
-        System.out.println(info.getEndereco()); //recebendo o Estado do Fornecedor
+        //Transporte
+        InfoEntregaDto entregaDto = new InfoEntregaDto(); //criando um Dto que vai receber os dados da entrega
+        //Passando as informações do pedido para o transporte
+        entregaDto.setPedidoId(pedido.getId()); //vem do fornecedor
+        entregaDto.setDataParaEntrega(LocalDate.now().plusDays(pedido.getTempoDePreparo())); //tempo de preparo pelo fornecedor, a partir da data de hoje
+        entregaDto.setEnderecoOrigem(info.getEndereco()); //endereco do fornecedor
+        entregaDto.setEnderecoDestino(compra.getEndereco().toString()); //endereço do cliente final que realiza a compra
 
-        //Elaborando dados de uma compra - para quando compra for feita/post na loja, gera um pedido/post no fornecedor
+        //Feign do Transporte
+        VoucherDto voucher = transportadorClient.reservaEntrega(entregaDto);
+
+        //Após o POST do pedido no fornecedor, essas dados retornam para loja - Postman: http://localhost:8081/compra
+        //Retorno do POST é pelo Feign FornecedorCLient (acima)
         Compra compraSalva = new Compra(); // pedido é uma nova compra
         compraSalva.setPedidoId(pedido.getId()); //Pegando o InfoPedidoDto e passando para Compra - Dto vem do fornecedor
         compraSalva.setTempoDePreparo(pedido.getTempoDePreparo()); //Pegando o InfoPedidoDto e passando para Compra
         compraSalva.setEnderecoDestino(compra.getEndereco().toString()); //Endereco vem do Post do pedido do cliente na Loja
+
+        //Feign Transporte com dados do voucher para a compra
+        compraSalva.setDataParaEntrega(voucher.getPrevisaoParaEntrega());
+        compraSalva.setVoucher(voucher.getNumero());
+
         //Salvando no db
         compraRepository.save(compraSalva);
 

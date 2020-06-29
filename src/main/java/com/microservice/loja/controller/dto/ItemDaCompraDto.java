@@ -9,7 +9,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ItemDaCompraDto {
-
+    //POST na Loja pelo cliente - ID = produto do fornecedor, Quantidade = quantos o cliente quer
+    //esse POST na loja é passado para o fornecedor
     private long id;
     private int quantidade;
 }

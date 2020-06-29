@@ -11,7 +11,7 @@ import lombok.ToString;
 @Setter
 @ToString
 public class EnderecoDto {
-
+    //DTO com que passa o Endereço na loja atraves de um POST e retorna quais fornecedores de região
     private String rua;
     private int numero;
     private String estado;
