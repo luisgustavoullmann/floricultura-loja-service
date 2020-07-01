@@ -26,7 +26,7 @@ public class CompraController {
 
     @PostMapping //Loja postando a requisição para o fornecedor
     public Compra realizaCompra(@RequestBody CompraDto compra) {
-        //Feign não repassa o token para os outros microserviços, então temos que implementar
+        //Feign não repassa o token para os outros microserviços, então temos que implementar o authentication
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return compraService.realizaCompra(compra);
     }
